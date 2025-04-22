@@ -76,16 +76,16 @@ The DQN implementation is robust and suitable for environments like CartPole-v1,
 ## Installation
 
 Install the package via pip:
-*`*`*bash
+```bash
 pip install deep-reinforcement-learning
-*`*`*
+```
 
 For development, clone the repository and install locally:
-*`*`*bash
+```bash
 git clone https://github.com/beltromatti/deep-reinforcement-learning.git
 cd deep-reinforcement-learning
 pip install -e .
-*`*`*
+```
 
 ## Requirements
 
@@ -102,7 +102,7 @@ See `requirements.txt` for a complete list of dependencies.
 
 Below is an example of training a DQN agent on the CartPole-v1 environment using the package’s high-level API:
 
-*`*`*python
+```python
 import gymnasium as gym
 import deep_reinforcement_learning as drl
 
@@ -151,7 +151,7 @@ def main():
 
 if __name__ == "__main__":
     main()
-*`*`*
+```
 
 This script:
 1. Wraps the CartPole-v1 environment with `EnvironmentWrapper` to ensure compatibility.
@@ -168,7 +168,7 @@ For additional examples, see the `examples/` directory:
 
 DQN hyperparameters can be customized via the `DQNConfig` class or a YAML file. Example `config.yaml`:
 
-*`*`*yaml
+```yaml
 episodes: 500
 batch_size: 64
 gamma: 0.99
@@ -182,34 +182,34 @@ max_grad_norm: 1.0
 save_checkpoint_every: 50
 checkpoint_path: "dqn_checkpoint.model"
 plot_path: "rewards_plot.png"
-*`*`*
+```
 
 Load the configuration:
 
-*`*`*python
+```python
 from deep_reinforcement_learning.algorithms.dqn.config import DQNConfig
 config = DQNConfig()
 config.load_yaml_config("config.yaml")
-*`*`*
+```
 
 ## Customization
 
 The package supports extensive customization:
 - **Environments**: Use any environment with `reset()` and `step()` methods. The `EnvironmentWrapper` handles state/action conversions.
 - **Neural Networks**: Define custom architectures by passing a list of layers to `Model`. Example:
-  *`*`*python
+  ```python
   from deep_reinforcement_learning import Model, InputLayer, HiddenLayer, OutputLayer, ReLU
   model = Model(
       state_size=env_wrapper.state_size,
       action_size=env_wrapper.action_size,
       layers=[InputLayer(), HiddenLayer(128, ReLU()), HiddenLayer(64, ReLU()), OutputLayer()]
   )
-  *`*`*
+  ```
 - **Hyperparameters**: Adjust all DQN parameters via `DQNConfig`.
 
 ## Project Structure
 
-*`*`*
+```
 deep-reinforcement-learning/
 ├── deep_reinforcement_learning/
 │   ├── algorithms/
@@ -230,7 +230,7 @@ deep-reinforcement-learning/
 ├── .gitignore                  # Don't track some useless files to github
 ├── pyproject.toml              # Installation script for modern packages
 ├── setup.py                    # Installation script
-*`*`*
+```
 
 ## Future Directions
 
