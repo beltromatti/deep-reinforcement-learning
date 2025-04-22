@@ -1,6 +1,6 @@
 ## deep-reinforcement-learning (Version: 1.0)
 
-A modular Python package for Deep Reinforcement Learning, designed to provide a flexible and extensible framework for training reinforcement learning agents, with a focus on accessibility for students, researchers, and developers.
+A modular, high-level Python package for Deep Reinforcement Learning, designed to simplify the implementation and study of DRL algorithms, offering an accessible and extensible framework for students, researchers, and developers.
 
 ## Overview
 
