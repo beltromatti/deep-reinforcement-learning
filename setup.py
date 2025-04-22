@@ -3,7 +3,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="deep-reinforcement-learning",
-    version="0.1.0",
+    version="1.0",
     packages=find_packages(),
     install_requires=[
         "torch>=2.0.0",
@@ -14,7 +14,7 @@ setup(
     ],
     author="Mattia Beltrami",
     author_email="mattia.beltrami@studio.unibo.it",
-    description="Modular package for deep reinforcement learning with high-level algorithms implementation",
+    description="A modular, high-level Python package for Deep Reinforcement Learning, designed to simplify the implementation and study of DRL algorithms for students, researchers, and enthusiasts.",
     long_description=open("README.md").read() if open("README.md", errors="ignore") else "",
     long_description_content_type="text/markdown",
     url="https://github.com/beltromatti/deep-reinforcement-learning",
