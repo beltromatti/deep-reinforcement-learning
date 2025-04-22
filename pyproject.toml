@@ -4,7 +4,7 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "dqn-rl"
+name = "deep-reinforcement-learning"
 version = "0.1.0"
 dependencies = [
     "torch>=2.0.0",
@@ -15,13 +15,13 @@ dependencies = [
 ]
 requires-python = ">=3.8"
 authors = [
-    {name = "Mattia Beltrami", email = "your.email@unibo.it"}
+    {name = "Mattia Beltrami", email = "mattia.beltrami@studio.unibo.it"}
 ]
-description = "A modular Deep Q-Network (DQN) package for reinforcement learning"
+description = "Modular package for deep reinforcement learning with high-level algorithms implementation"
 readme = "README.md"
 license = {file = "LICENSE"}
 classifiers = [
     "Programming Language :: Python :: 3",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Operating System :: OS Independent",
 ]

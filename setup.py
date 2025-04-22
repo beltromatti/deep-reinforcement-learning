@@ -2,7 +2,7 @@
 from setuptools import setup, find_packages
 
 setup(
-    name="dqn-rl",
+    name="deep-reinforcement-learning",
     version="0.1.0",
     packages=find_packages(),
     install_requires=[
@@ -13,14 +13,14 @@ setup(
         "gymnasium>=0.29.1"
     ],
     author="Mattia Beltrami",
-    author_email="your.email@unibo.it",
-    description="A modular Deep Q-Network (DQN) package for reinforcement learning",
-    long_description=open("README.md").read(),
+    author_email="mattia.beltrami@studio.unibo.it",
+    description="Modular package for deep reinforcement learning with high-level algorithms implementation",
+    long_description=open("README.md").read() if open("README.md", errors="ignore") else "",
     long_description_content_type="text/markdown",
-    url="https://github.com/your-username/dqn-rl",
+    url="https://github.com/beltromatti/deep-reinforcement-learning",
     classifiers=[
         "Programming Language :: Python :: 3",
-        "License :: OSI Approved :: MIT License",
+        "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Operating System :: OS Independent",
     ],
     python_requires=">=3.8",

@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.Python
+env/
+venv/
+
+# Data
+data/
+
+# IDEs
+.vscode/
+.idea/
+
+# Miscellaneous
+*.log
+*.DS_Store
+dist/
+build/
+*.egg-info/
+
+# PyTorch
+*.pt
+*.model
