@@ -2,4 +2,3 @@
 include README.md
 include LICENSE
 include requirements.txt
-recursive-include deep_reinforcement_learning *.py

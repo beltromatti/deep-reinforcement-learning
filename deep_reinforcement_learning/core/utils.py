@@ -68,7 +68,7 @@ def load_model(filepath: str) -> Model:
         ValueError: If layer or activation types are unsupported.
     """
     # Load the model info
-    model_info = torch.load(filepath, map_location=torch.device('cpu') if not torch.cuda.is_available() else None)
+    model_info = torch.load(filepath, map_location=torch.device('cpu') if not torch.cuda.is_available() else None, weights_only=False)
     
     # Extract parameters
     state_size = model_info['state_size']

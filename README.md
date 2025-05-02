@@ -1,4 +1,4 @@
-## deep-reinforcement-learning (Version: 1.0)
+## deep-reinforcement-learning (Version: 1.1)
 
 A modular, high-level Python package for Deep Reinforcement Learning, designed to simplify the implementation and study of DRL algorithms, offering an accessible and extensible framework for students, researchers, and developers.
 
@@ -18,7 +18,7 @@ The package is built around a modular and extensible architecture, with a clear 
   - **`utils.py`**: Provides utility functions for logging (`setup_logger`), saving models (`save_model`), and loading models (`load_model`). These utilities ensure consistent logging and model persistence across the package.
 
 - **Algorithms Module (`deep_reinforcement_learning.algorithms`)**:
-  - **`dqn/agent.py`**: Contains the `DQNAgent` class, which implements the DQN algorithm, and the `ReplayMemory` class for experience replay. The `DQNAgent` handles action selection (epsilon-greedy), memory storage, model optimization, and training loops.
+  - **`dqn/agent.py`**: Contains the `DQNAgent` class, which implements the DQN algorithm, and the `ReplayMemory`, `PrioritizedReplayMemory`, `SumTree` classes for the different types of experience replay (normal or PER). The `DQNAgent` handles action selection (epsilon-greedy), memory storage, model optimization, and training loops.
   - **`dqn/config.py`**: Defines the `DQNConfig` class, which manages hyperparameters (e.g., learning rate, gamma, epsilon decay) and supports loading configurations from YAML files.
 
 - **Package Initialization (`__init__.py`)**:
@@ -32,7 +32,6 @@ The package leverages **PyTorch** for neural network computations, supporting bo
 - **Flexible Environment Support**: Works with Gymnasium environments and custom environments via the `Environment` interface.
 - **Customizable Neural Networks**: Allows users to define network architectures using the `Model` class and layer abstractions.
 - **Configurable DQN**: Supports full customization of hyperparameters (e.g., gamma, epsilon, learning rate) via `DQNConfig`.
-- **Experience Replay**: Implements a fixed-size `ReplayMemory` for stable DQN training.
 - **Model Persistence**: Supports saving and loading models with architecture and weights preserved.
 - **Training Visualization**: Generates plots of episode rewards for performance analysis.
 - **Educational Design**: Includes detailed docstrings, logging, and error handling to aid learning.
@@ -45,7 +44,7 @@ The package implements the **Deep Q-Network (DQN)** algorithm, a value-based DRL
 - **Core Components**:
   - **Q-Network (`Model`)**: A neural network that maps states to action values (Q-values). By default, it consists of an input layer, two hidden layers (256 and 128 neurons with ReLU activations), and an output layer matching the action space size.
   - **Target Network**: A separate copy of the Q-network, updated periodically to stabilize training by providing consistent Q-value targets.
-  - **Replay Memory (`ReplayMemory`)**: A fixed-size buffer (default: 20,000 transitions) that stores experiences (state, action, reward, next_state, done). Random sampling from this buffer reduces temporal correlations, improving learning stability.
+  - **Replay Memory (`ReplayMemory`)**: A fixed-size buffer (default: 20,000 transitions) that stores experiences (state, action, reward, next_state, done). Random sampling from this buffer reduces temporal correlations, improving learning stability (Added support for Prioritized Experience Replay (PER) that gives more importance to more informative transitions that leads to a faster convergence).
 
 - **Training Process**:
   - **Epsilon-Greedy Policy**: The agent selects actions using an epsilon-greedy strategy, balancing exploration (random actions) and exploitation (greedy actions based on Q-values). Epsilon decays over time (default: from 1.0 to 0.02) to favor exploitation as training progresses.
@@ -59,7 +58,7 @@ The package implements the **Deep Q-Network (DQN)** algorithm, a value-based DRL
   - `episodes`: Number of training episodes (default: 1000).
   - `batch_size`: Number of transitions sampled per optimization step (default: 64).
   - `gamma`: Discount factor for future rewards (default: 0.99).
-  - `epsilon_start`, `epsilon_end`, `epsilon_decay`: Control exploration (default: 1.0, 0.02, 0.995).
+  - `epsilon_start`, `epsilon_end`, `epsilon_decay_mode`, `epsilon_exponential_decay`: Control exploration (default: 1.0, 0.02, 'exponential', 0.995).
   - `learning_rate`: Adam optimizer learning rate (default: 0.0005).
   - `memory_size`: Replay memory capacity (default: 20,000).
   - `target_update`: Frequency of target network updates (default: 10).
@@ -71,7 +70,7 @@ The package implements the **Deep Q-Network (DQN)** algorithm, a value-based DRL
   - Generates a reward plot (`rewards_plot.png`) to visualize training progress.
   - Logs episode statistics (reward, epsilon, loss) for monitoring.
 
-The DQN implementation is robust and suitable for environments like CartPole-v1, where it can achieve high rewards (e.g., >400) after sufficient training. Future enhancements could include prioritized experience replay, Double DQN, or Dueling DQN to improve performance.
+The DQN implementation is robust and suitable for environments like CartPole-v1, where it can achieve high rewards (e.g., >400) after sufficient training. Future enhancements could include Double DQN, Dueling DQN and other features to improve performance.
 
 ## Installation
 
@@ -107,47 +106,71 @@ import gymnasium as gym
 import deep_reinforcement_learning as drl
 
 def main():
-    # Create the CartPole-v1 environment
-    env = drl.EnvironmentWrapper(gym.make("CartPole-v1", render_mode="human"))
-    
-    # Define a custom neural network architecture
-    layers = [
-        drl.InputLayer(),
-        drl.HiddenLayer(256, drl.ReLU()),
-        drl.HiddenLayer(128, drl.ReLU()),
-        drl.OutputLayer()
-    ]
-    model = drl.Model(state_size=env.state_size, action_size=env.action_size, layers=layers)
-    
-    # Configure training parameters
-    config = drl.DQNConfig(
-        episodes=500,              # Number of training episodes
-        batch_size=64,             # Size of experience replay batch
-        gamma=0.99,                # Discount factor
-        epsilon_start=1.0,         # Initial exploration rate
-        epsilon_end=0.02,          # Final exploration rate
-        epsilon_decay=0.995,       # Exploration decay rate
-        memory_size=20000,         # Replay memory capacity
-        learning_rate=0.0005,      # Adam optimizer learning rate
-        target_update=10,          # Frequency of target network updates
-        max_grad_norm=1.0,         # Gradient clipping norm
-        save_checkpoint_every=50,   # Save model every 50 episodes
-        checkpoint_path="dqn_cartpole.model",  # Path to save model
-        plot_path="cartpole_rewards.png"     # Path to save rewards plot
+    """
+    Main function to set up, train, and evaluate a DQN agent on CartPole-v1.
+    """
+    # Create the CartPole-v1 environment with state normalization
+    # State bounds are defined to normalize observations, ensuring stable training
+    state_min = [-4.8, -3.5, -0.418, -3.5]  # Min bounds for [cart pos, cart vel, pole angle, pole vel]
+    state_max = [4.8, 3.5, 0.418, 3.5]       # Max bounds
+    env = drl.EnvironmentWrapper(
+        gym.make("CartPole-v1"),
+        truncate_episode=False,               # Continue episodes until environment termination
+        state_max_values=state_max,          # Upper bounds for state normalization
+        state_min_values=state_min           # Lower bounds for state normalization
     )
     
-    # Create and train the DQN agent
-    agent = drl.DQNAgent(env, model, config)
-    rewards = agent.train()
+    # Define a neural network architecture for the DQN
+    # The network maps states (4D input) to Q-values for each action (2 outputs)
+    layers = [
+        drl.InputLayer(),                    # Input layer (automatically sized to state_size)
+        drl.HiddenLayer(256, drl.ReLU()),    # 256 neurons with ReLU activation
+        drl.HiddenLayer(128, drl.ReLU()),    # 128 neurons with ReLU activation
+        drl.OutputLayer()                    # Output layer (automatically sized to action_size)
+    ]
+    model = drl.Model(
+        state_size=env.state_size,           # 4 (state dimensions)
+        action_size=env.action_size,         # 2 (left or right)
+        layers=layers
+    )
+
+    # Initialize weights using He initialization (suitable for ReLU activations)
+    model.init_weights(mode='he_relu')
     
-    # Save the trained model
+    # Configure DQN hyperparameters
+    # These parameters control exploration, learning, and training stability
+    config = drl.DQNConfig(
+        episodes=800,                        # Train for 800 episodes
+        batch_size=64,                       # Sample 64 experiences per training step
+        gamma=0.99,                          # Discount factor for future rewards
+        epsilon_start=1.0,                   # Start with full exploration
+        epsilon_end=0.02,                    # End with minimal exploration
+        epsilon_decay_mode='exponential',    # Decay epsilon exponentially
+        epsilon_exponential_decay=0.995,     # Decay factor per episode
+        memory_size=10000,                   # Store up to 10,000 experiences
+        learning_rate=0.0005,                # Learning rate for Adam optimizer
+        target_update=1000,                  # Update target network every 1000 steps
+        max_grad_norm=1.0,                   # Clip gradients to avoid large updates
+        save_checkpoint_every=50,            # Save model every 50 episodes
+        checkpoint_path="dqn_cartpole.model",# Save model to this file
+        plot_path="cartpole_rewards.png"     # Save reward plot to this file
+    )
+
+    # Create and train the DQN agent
+    # The agent learns by interacting with the environment and updating the model
+    agent = drl.DQNAgent(env, model, config)
+    rewards = agent.train()                  # Returns list of episode rewards
+    
+    # Save the trained model for future use
     drl.save_model(model, config.checkpoint_path)
     
     # Evaluate the trained agent
+    # Run the agent for up to 2000 steps with no exploration (greedy policy)
     agent.run(max_steps=2000)
     
-    # Print summary
-    print(f"Training completed. Average reward (last 100 episodes): {sum(rewards[-100:])/100:.2f}")
+    # Print a summary of training performance
+    avg_reward = sum(rewards[-100:]) / 100
+    print(f"Training completed. Average reward (last 100 episodes): {avg_reward:.2f}")
 
 if __name__ == "__main__":
     main()
@@ -157,27 +180,28 @@ This script:
 1. Wraps the CartPole-v1 environment with `EnvironmentWrapper` to ensure compatibility.
 2. Creates a custom neural network with two hidden layers (256 and 128 neurons).
 3. Configures the DQN agent with specified hyperparameters.
-4. Trains the agent for 500 episodes, saving checkpoints and a reward plot.
+4. Trains the agent for 800 episodes, saving checkpoints and a reward plot.
 5. Saves and run the trained model.
 
 For additional examples, see the `examples/` directory:
 - `cartpole_dqn.py`: Demonstrates DQN training on CartPole-v1.
-- `custom_env_dqn.py`: Shows how to use a custom environment.
+- `lunarlander_dqn_per.py`: Shows how to use PER (Prioritized Experience Replay) on LunarLander-v3.
 
 ## Configuration
 
 DQN hyperparameters can be customized via the `DQNConfig` class or a YAML file. Example `config.yaml`:
 
 ```yaml
-episodes: 500
+episodes: 1000
 batch_size: 64
 gamma: 0.99
 epsilon_start: 1.0
 epsilon_end: 0.02
-epsilon_decay: 0.995
+epsilon_decay_mode: 'exponential'
+epsilon_exponential_decay: 0.995
 memory_size: 20000
 learning_rate: 0.0005
-target_update: 10
+target_update: 1000
 max_grad_norm: 1.0
 save_checkpoint_every: 50
 checkpoint_path: "dqn_checkpoint.model"
@@ -223,6 +247,7 @@ deep-reinforcement-learning/
 │   ├── __init__.py             # Package initialization
 ├── examples/                   # Example scripts
 ├── tests/                      # Unit tests
+├── models/                     # Trained and Ready-To-Use models for various environments
 ├── README.md                   # Documentation
 ├── LICENSE                     # GNU GPLv3 License
 ├── requirements.txt            # Pip requirements
@@ -235,13 +260,21 @@ deep-reinforcement-learning/
 ## Future Directions
 
 Planned enhancements include:
+- Implementing advanced DQN variants (e.g., Double DQN, Dueling DQN...).
 - Adding Proximal Policy Optimization (PPO) as a subpackage under `algorithms/ppo`.
-- Implementing advanced DQN variants (e.g., Double DQN, Dueling DQN, Prioritized Experience Replay).
-- Supporting continuous action spaces in `EnvironmentWrapper`.
 - Integrating TensorBoard for real-time training visualization.
 - Expanding example scripts and tutorials for educational use.
 
 Contributions are welcome! See the **Contributing** section.
+
+## Release Notes
+
+### Version 1.1 (May 2025)
+
+- **Added Support for Prioritized Experience Replay (PER) in DQN**: The `deep_reinforcement_learning.algorithms.dqn` subpackage now includes support for Prioritized Experience Replay (PER), enhancing the DQN algorithm's learning efficiency. The `PrioritizedReplayMemory` and `SumTree` classes have been added to prioritize transitions with higher temporal-difference (TD) errors, allowing the agent to focus on more informative experiences during training. This leads to faster convergence and improved performance in complex environments.
+  
+  **What is PER?**  
+  Prioritized Experience Replay (PER) is an advanced replay memory strategy that assigns priorities to stored transitions based on their TD error, which measures the difference between predicted and actual Q-values. Transitions with higher TD errors are sampled more frequently, as they indicate areas where the agent can learn the most. The `SumTree` data structure efficiently manages these priorities, ensuring low computational overhead. Users can enable PER by configuring the `DQNAgent` with the `PrioritizedReplayMemory` option, as demonstrated in the `lunarlander_dqn_per.py` example.
 
 ## Use of Generative AI
 

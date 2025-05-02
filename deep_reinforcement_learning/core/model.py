@@ -1,6 +1,6 @@
-import torch
 import torch.nn as nn
 from abc import ABC, abstractmethod
+from typing import List, Optional
 
 class Layer(ABC):
     """Abstract base class for neural network layers."""
@@ -108,7 +108,7 @@ class Model(nn.Module):
             state_size (int): Dimension of the state space.
             action_size (int): Number of possible actions.
             layers (list, optional): List of Layer objects. If None, uses a default architecture
-                                   with two hidden layers (256 and 128 neurons).
+                                   with two hidden layers (64 and 64 neurons).
         
         Raises:
             ValueError: If state_size or action_size is not positive, layers is empty,
@@ -124,8 +124,8 @@ class Model(nn.Module):
             # Default architecture: two hidden layers with 256 and 128 neurons
             layers = [
                 InputLayer(),
-                HiddenLayer(256, ReLU()),
-                HiddenLayer(128, ReLU()),
+                HiddenLayer(64, ReLU()),
+                HiddenLayer(64, ReLU()),
                 OutputLayer()
             ]
         
@@ -190,3 +190,60 @@ class Model(nn.Module):
             raise ValueError(f"Expected input shape [batch_size, {self.state_size}], got {x.shape}")
         
         return self.network(x)
+    
+    def init_weights(self, mode: Optional[str] = None, range: List[float] = [-0.1, 0.1]):
+        """Initialize the weights of the network.
+        
+        Args:
+            mode (Optional[str]): Weight initialization strategy. Options:
+                - None: Uses PyTorch default initialization (uniform in [-1/sqrt(k), 1/sqrt(k)]).
+                - 'he_relu': He initialization (normal) for ReLU activation.
+                - 'he_leaky_relu': He initialization (normal) for LeakyReLU activation.
+                - 'he_gelu': He initialization (normal) for GELU activation.
+                - 'he_swish': He initialization (normal) for Swish/SiLU activation.
+                - 'xavier_tanh': Xavier/Glorot initialization (normal) for Tanh activation.
+                - 'xavier_sigmoid': Xavier/Glorot initialization (normal) for Sigmoid activation.
+                - 'lecun': LeCun initialization (normal) for SELU activation.
+                - 'uniform': Uniform initialization in the specified range.
+            range (List[float]): Range for 'uniform' mode (default: [-0.1, 0.1]).
+        
+        Raises:
+            ValueError: If an unsupported mode is provided or if the range is invalid.
+        """
+        # Validate range parameter
+        if not isinstance(range, list) or len(range) != 2:
+            raise ValueError("range must be a list of two values [min, max]")
+        if not all(isinstance(x, (int, float)) for x in range):
+            raise ValueError("range elements must be numeric")
+        if range[0] > range[1]:
+            raise ValueError("range's first element must be less than or equal to the second")
+        
+        def _initialize_layer(m):
+            if isinstance(m, (nn.Linear, nn.Conv2d)):
+                # Select initialization based on mode
+                if mode is None:
+                    return  # Use PyTorch's default initialization
+                elif mode == "he_relu":
+                    nn.init.kaiming_normal_(m.weight, nonlinearity='relu')
+                elif mode == "he_leaky_relu":
+                    nn.init.kaiming_normal_(m.weight, nonlinearity='leaky_relu', a=0.01)
+                elif mode == "he_gelu":
+                    nn.init.kaiming_normal_(m.weight, nonlinearity='gelu')
+                elif mode == "he_swish":
+                    nn.init.kaiming_normal_(m.weight, nonlinearity='relu')  # Swish uses ReLU-like initialization
+                elif mode in ("xavier_tanh", "xavier_sigmoid"):
+                    nn.init.xavier_normal_(m.weight)
+                elif mode == "lecun":
+                    fan_in = m.weight.size(1) if isinstance(m, nn.Linear) else m.weight.size(1) * m.weight.size(2) * m.weight.size(3)
+                    nn.init.normal_(m.weight, mean=0.0, std=(1.0 / fan_in) ** 0.5)
+                elif mode == "uniform":
+                    nn.init.uniform_(m.weight, range[0], range[1])
+                else:
+                    raise ValueError(f"Unsupported initialization mode: {mode}")
+                
+                # Initialize bias to zeros (if present) for custom modes
+                if mode is not None and m.bias is not None:
+                    nn.init.zeros_(m.bias)
+        
+        # Apply initialization to all layers
+        self.apply(_initialize_layer)

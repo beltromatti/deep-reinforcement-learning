@@ -20,7 +20,4 @@ data/
 dist/
 build/
 *.egg-info/
-
-# PyTorch
-*.pt
-*.model
+*.png

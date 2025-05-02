@@ -9,4 +9,4 @@ from .core.utils import setup_logger, save_model, load_model
 from .algorithms.dqn.agent import DQNAgent
 from .algorithms.dqn.config import DQNConfig
 
-__version__ = "1.0"
+__version__ = "1.1"
